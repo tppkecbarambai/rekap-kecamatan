@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rekap Kecamatan Pro Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+h1 { color: #333; font-size: 24px; }
+.tabs { overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1; }
+.tabs button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 14px; }
+.tabs button:hover { background-color: #ddd; }
+.tabs button.active { background-color: #4CAF50; color: white; }
+.tabcontent { display: none; padding: 20px; border: 1px solid #ccc; border-top: none; background: white; }
+.filter-box { margin-bottom: 20px; padding: 15px; background: #fafafa; border: 1px solid #ddd; }
+.filter-box select { padding: 6px; margin-right: 10px; font-size: 14px; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+table, th, td { border: 1px solid #ddd; }
+th, td { padding: 8px; text-align: left; font-size: 13px; }
+th { background-color: #4CAF50; color: white; }
+.chart-container { width: 100%; max-width: 700px; margin: 20px auto; }
+.total-box { font-weight: bold; margin: 10px 0; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+</head>
+<body>
+<h1>Rekap Kecamatan Pro Dashboard</h1>
+<div class="filter-box">
+  <label>Tahun: </label>
+  <select id="filterTahun"><option value="">Semua</option></select>
+  <label>Desa: </label>
+  <select id="filterDesa"><option value="">Semua</option></select>
+</div>
+<div class="tabs">
+  <button class="tablinks active" onclick="openTab(event, 'TabelData')">Tabel Data</button>
+  <button class="tablinks" onclick="openTab(event, 'PerTahun')">Grafik Per Tahun</button>
+  <button class="tablinks" onclick="openTab(event, 'PerDesa')">Per Desa</button>
+  <button class="tablinks" onclick="openTab(event, 'PerPrioritas')">Per Prioritas</button>
+</div>
+<div id="TabelData" class="tabcontent" style="display:block;">
+  <div class="total-box">Total Data: <span id="totalData">0</span></div>
+  <div id="tabelContainer"></div>
+</div>
+<div id="PerTahun" class="tabcontent">
+  <div class="chart-container"><canvas id="chartTahun"></canvas></div>
+</div>
+<div id="PerDesa" class="tabcontent">
+  <div class="chart-container"><canvas id="chartDesa"></canvas></div>
+  <div id="tabelDesa"></div>
+</div>
+<div id="PerPrioritas" class="tabcontent">
+  <div class="chart-container"><canvas id="chartPrioritas"></canvas></div>
+  <div id="tabelPrioritas"></div>
+</div>
+<script type="text/javascript">
+var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSwjaqPR9kNqtg1PlrgpEvtKqYwLFkCZHT0md0ShdK36bbsRyO6ttip_NedKiSGbQ/pub?gid=535774464&single=true&output=csv";
+var allData = [];
+var filteredData = [];
+var chartTahun, chartDesa, chartPrioritas;
+
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+function loadCSV() {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", CSV_URL, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+      parseCSV(xhr.responseText);
+    }
+  };
+  xhr.send();
+}
+
+function parseCSV(text) {
+  var lines = text.split(/\r?\n/);
+  var headers = parseCSVLine(lines[0]);
+  allData = [];
+  for (var i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === "") continue;
+    var values = parseCSVLine(lines[i]);
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[headers[j]] = values[j] ? values[j].trim() : "";
+    }
+    allData.push(obj);
+  }
+  initFilters();
+  applyFilter();
+}
+
+function parseCSVLine(line) {
+  var result = [];
+  var current = "";
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function initFilters() {
+  var tahunSet = {};
+  var desaSet = {};
+  for (var i = 0; i < allData.length; i++) {
+    if (allData[i].Tahun) tahunSet[allData[i].Tahun] = true;
+    if (allData[i].Desa) desaSet[allData[i].Desa] = true;
+  }
+  var filterTahun = document.getElementById("filterTahun");
+  var filterDesa = document.getElementById("filterDesa");
+  for (var t in tahunSet) {
+    var opt = document.createElement("option");
+    opt.value = t; opt.innerHTML = t;
+    filterTahun.appendChild(opt);
+  }
+  for (var d in desaSet) {
+    var opt = document.createElement("option");
+    opt.value = d; opt.innerHTML = d;
+    filterDesa.appendChild(opt);
+  }
+  filterTahun.onchange = applyFilter;
+  filterDesa.onchange = applyFilter;
+}
+
+function applyFilter() {
+  var tahun = document.getElementById("filterTahun").value;
+  var desa = document.getElementById("filterDesa").value;
+  filteredData = [];
+  for (var i = 0; i < allData.length; i++) {
+    var row = allData[i];
+    if ((tahun === "" || row.Tahun === tahun) && (desa === "" || row.Desa === desa)) {
+      filteredData.push(row);
+    }
+  }
+  renderTabel();
+  renderCharts();
+}
+
+function renderTabel() {
+  var container = document.getElementById("tabelContainer");
+  document.getElementById("totalData").innerHTML = filteredData.length;
+  if (filteredData.length === 0) { container.innerHTML = "Tidak ada data"; return; }
+  var headers = [];
+  for (var key in filteredData[0]) { headers.push(key); }
+  var html = "<table><tr>";
+  for (var i = 0; i < headers.length; i++) { html += "<th>" + headers[i] + "</th>"; }
+  html += "</tr>";
+  for (var i = 0; i < filteredData.length; i++) {
+    html += "<tr>";
+    for (var j = 0; j < headers.length; j++) {
+      html += "<td>" + filteredData[i][headers[j]] + "</td>";
+    }
+    html += "</tr>";
+  }
+  html += "</table>";
+  container.innerHTML = html;
+}
+
+function groupBy(key) {
+  var result = {};
+  for (var i = 0; i < filteredData.length; i++) {
+    var k = filteredData[i][key] || "Tidak Ada";
+    if (!result[k]) result[k] = 0;
+    result[k]++;
+  }
+  return result;
+}
+
+function renderCharts() {
+  var dataTahun = groupBy("Tahun");
+  var dataDesa = groupBy("Desa");
+  var dataPrioritas = groupBy("Prioritas");
+  updateChart("chartTahun", dataTahun, "Per Tahun");
+  updateChart("chartDesa", dataDesa, "Per Desa");
+  updateChart("chartPrioritas", dataPrioritas, "Per Prioritas");
+  renderRekapTable("tabelDesa", dataDesa, "Desa");
+  renderRekapTable("tabelPrioritas", dataPrioritas, "Prioritas");
+}
+
+function updateChart(canvasId, dataObj, label) {
+  var ctx = document.getElementById(canvasId).getContext("2d");
+  var labels = [], data = [];
+  for (var key in dataObj) { labels.push(key); data.push(dataObj[key]); }
+  if (window[canvasId]) window[canvasId].destroy();
+  window[canvasId] = new Chart(ctx, {
+    type: "bar",
+    data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: "#4CAF50" }] },
+    options: { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }] } }
+  });
+}
+
+function renderRekapTable(divId, dataObj, keyName) {
+  var html = "<table><tr><th>" + keyName + "</th><th>Jumlah</th></tr>";
+  for (var key in dataObj) {
+    html += "<tr><td>" + key + "</td><td>" + dataObj[key] + "</td></tr>";
+  }
+  html += "</table>";
+  document.getElementById(divId).innerHTML = html;
+}
+
+loadCSV();
+</script>
+</body>
+</html>
