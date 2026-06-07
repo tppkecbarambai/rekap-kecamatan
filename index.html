@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rekap Kecamatan Pro Dashboard</title>
+<style>
+* { box-sizing: border-box; }
+body { 
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
+  margin: 0; padding: 0; background: #f0f2f5; color: #333;
+}
+.header {
+  background: linear-gradient(135deg, #2e7d32 0%, #4CAF50 100%);
+  color: white; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+.header p { margin: 5px 0 0 0; font-size: 13px; opacity: 0.9; }
+.btn-back {
+  display: inline-block; background: rgba(255,255,255,0.2); color: white;
+  padding: 8px 16px; border-radius: 4px; text-decoration: none;
+  font-size: 13px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.3);
+}
+.btn-back:hover { background: rgba(255,255,255,0.3); }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.filter-box { 
+  background: white; padding: 15px 20px; border-radius: 8px; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
+}
+.filter-box label { font-weight: 600; font-size: 13px; margin-right: 8px; color: #555; }
+.filter-box select { 
+  padding: 8px 12px; margin-right: 15px; font-size: 14px; 
+  border: 1px solid #ddd; border-radius: 4px; background: white;
+}
+.tabs { 
+  overflow: hidden; background-color: white; border-radius: 8px 8px 0 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.tabs button { 
+  background-color: inherit; float: left; border: none; outline: none; 
+  cursor: pointer; padding: 14px 16px; transition: 0.2s; font-size: 13px;
+  font-weight: 500; border-bottom: 3px solid transparent;
+}
+.tabs button:hover { background-color: #f5f5f5; }
+.tabs button.active { 
+  color: #4CAF50; border-bottom: 3px solid #4CAF50; background-color: #fafafa;
+}
+.tabcontent { 
+  display: none; padding: 25px; background: white; 
+  border-radius: 0 0 8px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
+}
+.total-card {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(76,175,80,0.3);
+}
+.total-card.label { font-size: 13px; opacity: 0.9; margin-bottom: 5px; }
+.total-card.value { font-size: 32px; font-weight: 700; }
+.total-card.anggaran { 
+  background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%);
+  box-shadow: 0 2px 8px rgba(25,118,210,0.3);
+}
+.total-card.realisasi { 
+  background: linear-gradient(135deg, #388E3C 0%, #4CAF50 100%);
+  box-shadow: 0 2px 8px rgba(56,142,60,0.3);
+}
+.row-cards { display: flex; gap: 15px; flex-wrap: wrap; }
+.row-cards.total-card { flex: 1; min-width: 250px; margin-bottom: 0; }
+.legend-box {
+  padding: 12px 15px; background: #fafafa; border: 1px solid #e0e0e0;
+  border-radius: 6px; margin-bottom: 15px; font-size: 13px;
+}
+.legend-item { display: inline-block; margin-right: 15px; }
+.legend-color { 
+  display: inline-block; width: 14px; height: 14px; 
+  border-radius: 3px; margin-right: 5px; vertical-align: middle;
+}
+.sub-filter {
+  background: #f5f5f5; padding: 12px 15px; border-radius: 6px; 
+  margin-bottom: 20px; border: 1px solid #e0e0e0;
+}
+.sub-filter label { font-weight: 600; font-size: 13px; margin-right: 8px; }
+.sub-filter select { 
+  padding: 8px 12px; font-size: 14px; 
+  border: 1px solid #ddd; border-radius: 4px; background: white; min-width: 250px;
+}
+.table-wrapper { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; }
+table, th, td { border: 1px solid #e0e0e0; }
+th, td { padding: 10px 12px; text-align: left; }
+th { background-color: #4CAF50; color: white; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+tr:nth-child(even) { background-color: #f9f9f9; }
+tr:hover { background-color: #f1f8e9; }
+tr.total-row { background-color: #E3F2FD!important; font-weight: 700; }
+tr.total-row td { border-top: 2px solid #1976D2; }
+td.angka { text-align: right; font-weight: 600; }
+td.persen { text-align: center; font-weight: 600; }
+td.rank { text-align: center; font-weight: 700; font-size: 14px; }
+.rank-1 { background: #FFD700!important; color: #000; }
+.rank-2 { background: #C0C0C0!important; color: #000; }
+.rank-3 { background: #CD7F32!important; color: #fff; }
+.status-berjalan { background-color: #C8E6C9!important; color: #1B5E20; font-weight: 600; }
+.status-belum { background-color: #FFCDD2!important; color: #B71C1C; font-weight: 600; }
+.status-selesai { background-color: #FFF9C4!important; color: #F57F17; font-weight: 600; }
+.chart-container { 
+  width: 100%; margin: 20px auto; padding: 15px;
+  background: #fafafa; border-radius: 8px; overflow-x: auto;
+}
+.chart-inner { min-width: 600px; }
+.chart-legend { text-align: center; margin-bottom: 10px; font-size: 13px; }
+.chart-legend span { display: inline-block; margin: 0 10px; }
+.chart-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 5px; vertical-align: middle; }
+.loading { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+.error-msg { text-align: center; padding: 40px; color: #D32F2F; font-size: 14px; background: #FFEBEE; border-radius: 6px; }
+.footer { text-align: center; padding: 20px; font-size: 12px; color: #999; }
+@media screen and (max-width: 768px) {
+.header h1 { font-size: 18px; }
+.container { padding: 10px; }
+.filter-box select,.sub-filter select { width: 100%; margin-bottom: 10px; margin-right: 0; }
+.tabs button { padding: 10px 8px; font-size: 11px; width: 33.33%; }
+.tabcontent { padding: 15px; }
+.total-card.value { font-size: 24px; }
+.row-cards { flex-direction: column; }
+  table { font-size: 11px; }
+  th, td { padding: 6px 8px; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@0.7.0/dist/chartjs-plugin-datalabels.min.js"></script>
+</head>
+<body>
+<div class="header">
+  <h1>📊 Rekap Kecamatan Pro Dashboard</h1>
+  <p>Data real-time dari Google Sheets | Support Windows 7 & Mobile</p>
+  <a href="https://tppkecamatanbarambai.blogspot.com/p/dasboard-progres-pendampingan.html?m=1" class="btn-back">← Kembali ke Dashboard Utama</a>
+</div>
+<div class="container">
+  <div class="filter-box">
+    <label>🗓️ Tahun:</label>
+    <select id="filterTahun"><option value="">Semua Tahun</option></select>
+    <label>📍 Desa:</label>
+    <select id="filterDesa"><option value="">Semua Desa</option></select>
+  </div>
+  <div class="tabs">
+    <button class="tablinks active" onclick="openTab(event, 'TabelData')">📋 Tabel Data</button>
+    <button class="tablinks" onclick="openTab(event, 'PerTahun')">📈 Per Tahun</button>
+    <button class="tablinks" onclick="openTab(event, 'PerDesa')">🏘️ Per Desa</button>
+    <button class="tablinks" onclick="openTab(event, 'PerPrioritas')">⭐ Per Prioritas</button>
+    <button class="tablinks" onclick="openTab(event, 'PrioritasPerDesa')">🎯 Prioritas per Desa</button>
+  </div>
+  <div id="TabelData" class="tabcontent" style="display:block;">
+    <div class="row-cards">
+      <div class="total-card">
+        <div class="label">TOTAL DATA</div>
+        <div class="value" id="totalData">0</div>
+      </div>
+      <div class="total-card anggaran">
+        <div class="label">TOTAL ANGGARAN</div>
+        <div class="value" id="totalAnggaran">0</div>
+      </div>
+      <div class="total-card realisasi">
+        <div class="label">TOTAL REALISASI</div>
+        <div class="value" id="totalRealisasi">0</div>
+      </div>
+    </div>
+    <div class="legend-box">
+      <strong>Legend Status:</strong>
+      <span class="legend-item"><span class="legend-color" style="background:#C8E6C9;"></span>Berjalan</span>
+      <span class="legend-item"><span class="legend-color" style="background:#FFCDD2;"></span>Belum</span>
+      <span class="legend-item"><span class="legend-color" style="background:#FFF9C4;"></span>Selesai</span>
+    </div>
+    <div class="table-wrapper" id="tabelContainer"><div class="loading">⏳ Memuat data...</div></div>
+  </div>
+  <div id="PerTahun" class="tabcontent">
+    <div class="chart-legend">
+      <span><i style="background:#2196F3;"></i>Anggaran</span>
+      <span><i style="background:#4CAF50;"></i>Realisasi</span>
+    </div>
+    <div class="chart-container"><div class="chart-inner"><canvas id="chartTahun"></canvas></div></div>
+    <div class="table-wrapper" id="tabelTahun"></div>
+  </div>
+  <div id="PerDesa" class="tabcontent">
+    <div class="chart-legend">
+      <span><i style="background:#2196F3;"></i>Anggaran</span>
+      <span><i style="background:#4CAF50;"></i>Realisasi</span>
+    </div>
+    <div class="chart-container"><div class="chart-inner"><canvas id="chartDesa"></canvas></div></div>
+    <div class="table-wrapper" id="tabelDesa"></div>
+  </div>
+  <div id="PerPrioritas" class="tabcontent">
+    <div class="chart-legend">
+      <span><i style="background:#2196F3;"></i>Anggaran</span>
+      <span><i style="background:#4CAF50;"></i>Realisasi</span>
+    </div>
+    <div class="chart-container"><div class="chart-inner"><canvas id="chartPrioritas"></canvas></div></div>
+    <div class="table-wrapper" id="tabelPrioritas"></div>
+  </div>
+  <div id="PrioritasPerDesa" class="tabcontent">
+    <div class="sub-filter">
+      <label>🎯 Pilih Prioritas:</label>
+      <select id="filterPrioritasTab"><option value="">-- Pilih Prioritas --</option></select>
+    </div>
+    <div class="chart-legend">
+      <span><i style="background:#2196F3;"></i>Anggaran</span>
+      <span><i style="background:#4CAF50;"></i>Realisasi</span>
+    </div>
+    <div class="chart-container"><div class="chart-inner"><canvas id="chartPrioritasDesa"></canvas></div></div>
+    <div class="table-wrapper" id="tabelPrioritasDesa"><div class="loading">Pilih prioritas di atas untuk melihat data per desa</div></div>
+  </div>
+</div>
+<div class="footer">
+  Dibuat untuk Kecamatan | Data otomatis update dari Google Sheets
+</div>
+<script type="text/javascript">
+var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSwjaqPR9kNqtg1PlrgpEvtKqYwLFkCZHT0md0ShdK36bbsRyO6ttip_NedKiSGbQ/pub?gid=535774464&single=true&output=csv";
+var allData = [];
+var filteredData = [];
+var chartTahun, chartDesa, chartPrioritas, chartPrioritasDesa;
+var KOLOM_ANGKA = ['PAGU', 'REALISASI', 'ANGGARAN', 'JUMLAH', 'TOTAL', 'BIAYA'];
+var STATUS_WARNA = {
+  'berjalan': 'status-berjalan',
+  'belum': 'status-belum',
+  'selesai': 'status-selesai'
+};
+
+function formatAngka(val) {
+  var num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+  if (isNaN(num)) return val;
+  return num.toLocaleString('id-ID');
+}
+
+function formatSingkat(val) {
+  var num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+  if (isNaN(num)) return val;
+  if (num >= 1000000000) return (num/1000000000).toFixed(1) + ' M';
+  if (num >= 1000000) return (num/1000000).toFixed(1) + ' Jt';
+  if (num >= 1000) return (num/1000).toFixed(0) + ' Rb';
+  return num.toLocaleString('id-ID');
+}
+
+function getAngkaValue(val) {
+  var num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+  return isNaN(num)? 0 : num;
+}
+
+function hitungPersen(realisasi, anggaran) {
+  if (anggaran == 0) return 0;
+  return ((realisasi / anggaran) * 100).toFixed(1);
+}
+
+function isKolomAngka(namaKolom) {
+  for (var i = 0; i < KOLOM_ANGKA.length; i++) {
+    if (namaKolom.toUpperCase().indexOf(KOLOM_ANGKA[i])!== -1) return true;
+  }
+  return false;
+}
+
+function cariKolom(data, kataKunci) {
+  if (data.length == 0) return '';
+  for (var key in data[0]) {
+    if (key.toUpperCase().indexOf(kataKunci)!== -1) return key;
+  }
+  return '';
+}
+
+function getStatusClass(val) {
+  var v = String(val).toLowerCase().trim();
+  for (var key in STATUS_WARNA) {
+    if (v.indexOf(key)!== -1) return STATUS_WARNA[key];
+  }
+  return '';
+}
+
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+  if (tabName === 'PrioritasPerDesa') renderPrioritasPerDesa();
+}
+
+function loadCSV() {
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      if (results.data && results.data.length > 0) {
+        allData = results.data;
+        initFilters();
+        applyFilter();
+      } else {
+        document.getElementById("tabelContainer").innerHTML = '<div class="error-msg">❌ Data kosong. Cek Google Sheets.</div>';
+      }
+    },
+    error: function(err) {
+      document.getElementById("tabelContainer").innerHTML = '<div class="error-msg">❌ Gagal load CSV: ' + err + '. Cek koneksi internet.</div>';
+    }
+  });
+}
+
+function initFilters() {
+  var tahunSet = {};
+  var desaSet = {};
+  var prioritasSet = {};
+  for (var i = 0; i < allData.length; i++) {
+    if (allData[i].Tahun) tahunSet[allData[i].Tahun] = true;
+    if (allData[i].Desa) desaSet[allData[i].Desa] = true;
+    if (allData[i].Prioritas) prioritasSet[allData[i].Prioritas] = true;
+  }
+  var filterTahun = document.getElementById("filterTahun");
+  var filterDesa = document.getElementById("filterDesa");
+  var filterPrioritasTab = document.getElementById("filterPrioritasTab");
+  
+  var tahunKeys = [];
+  for (var t in tahunSet) { tahunKeys.push(t); }
+  tahunKeys.sort();
+  for (var i = 0; i < tahunKeys.length; i++) {
+    var opt = document.createElement("option");
+    opt.value = tahunKeys[i]; opt.innerHTML = tahunKeys[i];
+    filterTahun.appendChild(opt);
+  }
+  var desaKeys = [];
+  for (var d in desaSet) { desaKeys.push(d); }
+  desaKeys.sort();
+  for (var i = 0; i < desaKeys.length; i++) {
+    var opt = document.createElement("option");
+    opt.value = desaKeys[i]; opt.innerHTML = desaKeys[i];
+    filterDesa.appendChild(opt);
+  }
+  var prioritasKeys = [];
+  for (var p in prioritasSet) { prioritasKeys.push(p); }
+  prioritasKeys.sort();
+  for (var i = 0; i < prioritasKeys.length; i++) {
+    var opt = document.createElement("option");
+    opt.value = prioritasKeys[i]; opt.innerHTML = prioritasKeys[i];
+    filterPrioritasTab.appendChild(opt);
+  }
+  filterTahun.onchange = applyFilter;
+  filterDesa.onchange = applyFilter;
+  filterPrioritasTab.onchange = renderPrioritasPerDesa;
+}
+
+function applyFilter() {
+  var tahun = document.getElementById("filterTahun").value;
+  var desa = document.getElementById("filterDesa").value;
+  filteredData = [];
+  for (var i = 0; i < allData.length; i++) {
+    var row = allData[i];
+    if ((tahun === "" || row.Tahun === tahun) && (desa === "" || row.Desa === desa)) {
+      filteredData.push(row);
+    }
+  }
+  renderTabel();
+  renderCharts();
+}
+
+function renderTabel() {
+  var container = document.getElementById("tabelContainer");
+  document.getElementById("totalData").innerHTML = filteredData.length;
+  
+  var kolomPagu = cariKolom(filteredData, 'PAGU');
+  if (!kolomPagu) kolomPagu = cariKolom(filteredData, 'ANGGARAN');
+  var kolomRealisasi = cariKolom(filteredData, 'REALISASI');
+  
+  var totalAnggaran = 0, totalRealisasi = 0;
+  for (var i = 0; i < filteredData.length; i++) {
+    if (kolomPagu) totalAnggaran += getAngkaValue(filteredData[i][kolomPagu]);
+    if (kolomRealisasi) totalRealisasi += getAngkaValue(filteredData[i][kolomRealisasi]);
+  }
+  document.getElementById("totalAnggaran").innerHTML = formatAngka(totalAnggaran);
+  document.getElementById("totalRealisasi").innerHTML = formatAngka(totalRealisasi);
+  
+  if (filteredData.length === 0) { container.innerHTML = '<div class="loading">📭 Tidak ada data sesuai filter</div>'; return; }
+  var headers = [];
+  for (var key in filteredData[0]) { headers.push(key); }
+  var html = "<table><thead><tr>";
+  for (var i = 0; i < headers.length; i++) { html += "<th>" + headers[i] + "</th>"; }
+  html += "</tr></thead><tbody>";
+  for (var i = 0; i < filteredData.length; i++) {
+    html += "<tr>";
+    for (var j = 0; j < headers.length; j++) {
+      var val = filteredData[i][headers[j]];
+      var className = '';
+      if (headers[j].toLowerCase().indexOf('keterangan')!== -1 || headers[j].toLowerCase().indexOf('status')!== -1) {
+        className = getStatusClass(val);
+      }
+      if (isKolomAngka(headers[j])) {
+        val = formatAngka(val);
+        className += ' angka';
+      }
+      html += '<td class="' + className + '">' + escapeHtml(val) + '</td>';
+    }
+    html += "</tr>";
+  }
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(text));
+  return div.innerHTML;
+}
+
+function groupByAnggaranRealisasi(key) {
+  var result = {};
+  var kolomAnggaran = cariKolom(filteredData, 'PAGU');
+  if (!kolomAnggaran) kolomAnggaran = cariKolom(filteredData, 'ANGGARAN');
+  var kolomRealisasi = cariKolom(filteredData, 'REALISASI');
+  
+  for (var i = 0; i < filteredData.length; i++) {
+    var k = filteredData[i][key] || "Tidak Ada";
+    if (!result[k]) result[k] = { count: 0, anggaran: 0, realisasi: 0 };
+    result[k].count++;
+    if (kolomAnggaran) result[k].anggaran += getAngkaValue(filteredData[i][kolomAnggaran]);
+    if (kolomRealisasi) result[k].realisasi += getAngkaValue(filteredData[i][kolomRealisasi]);
+  }
+  return result;
+}
+
+function renderCharts() {
+  var dataTahun = groupByAnggaranRealisasi("Tahun");
+  var dataDesa = groupByAnggaranRealisasi("Desa");
+  var dataPrioritas = groupByAnggaranRealisasi("Prioritas");
+  
+  updateChartDouble("chartTahun", dataTahun, "Per Tahun");
+  updateChartDouble("chartDesa", dataDesa, "Per Desa");
+  updateChartDouble("chartPrioritas", dataPrioritas, "Per Prioritas");
+  
+  renderRekapTable("tabelTahun", dataTahun, "Tahun");
+  renderRekapTable("tabelDesa", dataDesa, "Desa");
+  renderRekapTable("tabelPrioritas", dataPrioritas, "Prioritas");
+}
+
+function updateChartDouble(canvasId, dataObj, label) {
+  var ctx = document.getElementById(canvasId).getContext("2d");
+  var labels = [], dataAnggaran = [], dataRealisasi = [];
+  for (var key in dataObj) { 
+    labels.push(key); 
+    dataAnggaran.push(dataObj[key].anggaran); 
+    dataRealisasi.push(dataObj[key].realisasi); 
+  }
+  if (window[canvasId]) window[canvasId].destroy();
+  window[canvasId] = new Chart(ctx, {
+    type: "bar",
+    data: { 
+      labels: labels, 
+      datasets: [
+        { 
+          label: 'Anggaran', 
+          data: dataAnggaran, 
+          backgroundColor: '#2196F3',
+          borderColor: '#1976D2',
+          borderWidth: 1
+        },
+        { 
+          label: 'Realisasi', 
+          data: dataRealisasi, 
+          backgroundColor: '#4CAF50',
+          borderColor: '#388E3C',
+          borderWidth: 1
+        }
+      ] 
+    },
+    plugins: [ChartDataLabels],
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: true,
+      plugins: {
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          formatter: function(value) { return formatSingkat(value); },
+          font: { weight: 'bold', size: 9 }
+        }
+      },
+      scales: { 
+        yAxes: [{ ticks: { beginAtZero: true, callback: function(value) { return formatSingkat(value); } } }],
+        xAxes: [{ ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } }]
+      },
+      tooltips: {
+        callbacks: {
+          label: function(tooltipItem, data) {
+            var label = data.datasets[tooltipItem.datasetIndex].label || '';
+            return label + ': ' + formatAngka(tooltipItem.yLabel);
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderRekapTable(divId, dataObj, keyName) {
+  var html = '<div class="table-wrapper"><table><thead><tr><th>' + keyName + '</th><th>Jumlah Data</th><th>Total Anggaran</th><th>Total Realisasi</th><th>% Realisasi</th></tr></thead><tbody>';
+  var totalCount = 0, totalAnggaran = 0, totalRealisasi = 0;
+  for (var key in dataObj) { 
+    totalCount += dataObj[key].count;
+    totalAnggaran += dataObj[key].anggaran;
+    totalRealisasi += dataObj[key].realisasi;
+  }
+  for (var key in dataObj) {
+    var persen = hitungPersen(dataObj[key].realisasi, dataObj[key].anggaran);
+    html += "<tr><td>" + escapeHtml(key) + "</td>";
+    html += "<td class='angka'>" + formatAngka(dataObj[key].count) + "</td>";
+    html += "<td class='angka'>" + formatAngka(dataObj[key].anggaran) + "</td>";
+    html += "<td class='angka'>" + formatAngka(dataObj[key].realisasi) + "</td>";
+    html += "<td class='persen'>" + persen + "%</td></tr>";
+  }
+  var totalPersen = hitungPersen(totalRealisasi, totalAnggaran);
+  html += '<tr class="total-row"><td>TOTAL</td>';
+  html += '<td class="angka">' + formatAngka(totalCount) + '</td>';
+  html += '<td class="angka">' + formatAngka(totalAnggaran) + '</td>';
+  html += '<td class="angka">' + formatAngka(totalRealisasi) + '</td>';
+  html += '<td class="persen">' + totalPersen + '%</td></tr>';
+  html += "</tbody></table></div>";
+  document.getElementById(divId).innerHTML = html;
+}
+
+function renderPrioritasPerDesa() {
+  var prioritas = document.getElementById("filterPrioritasTab").value;
+  var container = document.getElementById("tabelPrioritasDesa");
+  if (!prioritas) {
+    container.innerHTML = '<div class="loading">Pilih prioritas di atas untuk melihat data per desa</div>';
+    if (chartPrioritasDesa) chartPrioritasDesa.destroy();
+    return;
+  }
+  
+  var dataPerDesa = {};
+  var kolomAnggaran = cariKolom(filteredData, 'PAGU');
+  if (!kolomAnggaran) kolomAnggaran = cariKolom(filteredData, 'ANGGARAN');
+  var kolomRealisasi = cariKolom(filteredData, 'REALISASI');
+  
+  for (var i = 0; i < filteredData.length; i++) {
+    if (filteredData[i].Prioritas === prioritas) {
+      var desa = filteredData[i].Desa || "Tidak Ada";
+      if (!dataPerDesa[desa]) dataPerDesa[desa] = { anggaran: 0, realisasi: 0, count: 0 };
+      dataPerDesa[desa].count++;
+      if (kolomAnggaran) dataPerDesa[desa].anggaran += getAngkaValue(filteredData[i][kolomAnggaran]);
+      if (kolomRealisasi) dataPerDesa[desa].realisasi += getAngkaValue(filteredData[i][kolomRealisasi]);
+    }
+  }
+  
+  var desaArray = [];
+  for (var desa in dataPerDesa) {
+    var persen = parseFloat(hitungPersen(dataPerDesa[desa].realisasi, dataPerDesa[desa].anggaran));
+    desaArray.push({
+      nama: desa,
+      anggaran: dataPerDesa[desa].anggaran,
+      realisasi: dataPerDesa[desa].realisasi,
+      persen: persen,
+      count: dataPerDesa[desa].count
+    });
+  }
+  desaArray.sort(function(a, b) { return b.persen - a.persen; });
+  
+  var ctx = document.getElementById("chartPrioritasDesa").getContext("2d");
+  var labels = [], dataAnggaran = [], dataRealisasi = [];
+  for (var i = 0; i < desaArray.length; i++) {
+    labels.push(desaArray[i].nama);
+    dataAnggaran.push(desaArray[i].anggaran);
+    dataRealisasi.push(desaArray[i].realisasi);
+  }
+  if (chartPrioritasDesa) chartPrioritasDesa.destroy();
+  chartPrioritasDesa = new Chart(ctx, {
+    type: "bar",
+    data: { 
+      labels: labels, 
+      datasets: [
+        { 
+          label: 'Anggaran', 
+          data: dataAnggaran, 
+          backgroundColor: '#2196F3',
+          borderColor: '#1976D2',
+          borderWidth: 1
+        },
+        { 
+          label: 'Realisasi', 
+          data: dataRealisasi, 
+          backgroundColor: '#4CAF50',
+          borderColor: '#388E3C',
+          borderWidth: 1
+        }
+      ] 
+    },
+    plugins: [ChartDataLabels],
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: true,
+      plugins: {
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          formatter: function(value) { return formatSingkat(value); },
+          font: { weight: 'bold', size: 9 }
+        }
+      },
+      scales: { 
+        yAxes: [{ ticks: { beginAtZero: true, callback: function(value) { return formatSingkat(value); } } }],
+        xAxes: [{ ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } }]
+      },
+      tooltips: {
